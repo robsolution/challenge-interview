@@ -43,7 +43,8 @@ def lambda_handler(event, context):
         az_response = ec2_client.describe_availability_zones(
             Filters=[{'Name': 'state', 'Values': ['available']}]
         )
-        availability_zones = [az['ZoneName'] for az in az_response['AvailabilityZones']]
+        availability_zones = [az['ZoneName']
+                              for az in az_response['AvailabilityZones']]
         az_count = len(availability_zones)
 
         if az_count == 0:
@@ -58,8 +59,8 @@ def lambda_handler(event, context):
             public_cidr_block = allocated_blocks[0]
             private_cidr_block = allocated_blocks[1]
         except Exception as e:
-            msg = (f"CIDR of VPC {vpc_cidr} is too small to be divided in two. "
-                   f"Error: {e}")
+            msg = (f"CIDR of VPC {vpc_cidr} is too small to be divided "
+                   f"in two. Error: {e}")
             raise ValueError(msg)
 
         logger.info(f"Public subnet block: {public_cidr_block}")
@@ -70,14 +71,17 @@ def lambda_handler(event, context):
         private_subnet_prefix = private_cidr_block.prefixlen + subnet_prefix_diff
 
         if public_subnet_prefix > 28:
-            msg = (f"Many AZs ({az_count}) to divide the block "
-                   f"{public_cidr_block}. The subnets would be smaller than /28."
-                   )
+            msg = (
+                f"Many AZs ({az_count}) to divide the block "
+                f"{public_cidr_block}. The subnets would be smaller "
+                f"than /28."
+            )
             raise ValueError(msg)
 
         public_subnets_iter = public_cidr_block.subnets(
             new_prefix=public_subnet_prefix)
-        private_subnets_iter = private_cidr_block.subnets(new_prefix=private_subnet_prefix)
+        private_subnets_iter = private_cidr_block.subnets(
+            new_prefix=private_subnet_prefix)
 
         # 4. Create a VPC
         vpc_response = ec2_client.create_vpc(CidrBlock=vpc_cidr)
@@ -90,13 +94,15 @@ def lambda_handler(event, context):
         igw_response = ec2_client.create_internet_gateway()
         igw_id = igw_response['InternetGateway']['InternetGatewayId']
         add_tags(igw_id, f"{PROJECT_TAG}-{job_id}-IGW")
-        ec2_client.attach_internet_gateway(InternetGatewayId=igw_id, VpcId=vpc_id)
+        ec2_client.attach_internet_gateway(InternetGatewayId=igw_id,
+                                           VpcId=vpc_id)
         logger.info(f"IGW {igw_id} created and attached.")
 
         # 6. Create a PUBLIC Routing Table (Only one)
         public_rt_response = ec2_client.create_route_table(VpcId=vpc_id)
         public_rt_id = public_rt_response['RouteTable']['RouteTableId']
-        add_tags(public_rt_id, f"{PROJECT_TAG}-{job_id}-Public-RT")
+        add_tags(public_rt_id,
+                 f"{PROJECT_TAG}-{job_id}-Public-RT")
 
         # Add route to IGW
         ec2_client.create_route(
@@ -104,8 +110,8 @@ def lambda_handler(event, context):
             DestinationCidrBlock='0.0.0.0/0',
             GatewayId=igw_id
         )
-        logger.info(f"Public route table {public_rt_id} created with route "
-                    f"to IGW.")
+        logger.info(f"Public route table {public_rt_id} created "
+                    f"with route to IGW.")
 
         # 7. Loop 1: Create all Subnets
         public_subnet_ids = []
@@ -131,8 +137,9 @@ def lambda_handler(event, context):
                 SubnetId=pub_subnet_id,
                 MapPublicIpOnLaunch={'Value': True})
             public_subnet_ids.append(pub_subnet_id)
-            logger.info(f"Public Subnet {pub_subnet_id} ({public_subnet_cidr}) "
-                        f"on {az_name} created.")
+            log_msg = (f"Public Subnet {pub_subnet_id} "
+                       f"({public_subnet_cidr}) on {az_name} created.")
+            logger.info(log_msg)
 
             # Store the ID of the first public subnet for the NAT Gateway.
             if i == 0:
@@ -150,8 +157,9 @@ def lambda_handler(event, context):
                 priv_subnet_id,
                 f"{PROJECT_TAG}-{job_id}-Private-Subnet-{i+1}-{az_name}")
             private_subnet_ids.append(priv_subnet_id)
-            logger.info(f"Private Subnet {priv_subnet_id} ({private_subnet_cidr}) "
-                        f"on {az_name} created.")
+            log_msg = (f"Private Subnet {priv_subnet_id} "
+                       f"({private_subnet_cidr}) on {az_name} created.")
+            logger.info(log_msg)
 
         # --- 8. Create the SINGLE NAT Gateway ---
         if not first_public_subnet_id:
@@ -167,13 +175,15 @@ def lambda_handler(event, context):
         )
         nat_gw_id = nat_gw_response['NatGateway']['NatGatewayId']
         add_tags(nat_gw_id, f"{PROJECT_TAG}-{job_id}-NAT-GW-Single")
-        logger.info(f"Single NAT Gateway {nat_gw_id} creating on subnet "
-                    f"{first_public_subnet_id}...")
+        log_msg = (f"Single NAT Gateway {nat_gw_id} creating on "
+                   f"subnet {first_public_subnet_id}...")
+        logger.info(log_msg)
 
         # --- 9. Create a PRIVATE Routing Table (Only one) ---
         private_rt_response = ec2_client.create_route_table(VpcId=vpc_id)
         private_rt_id = private_rt_response['RouteTable']['RouteTableId']
-        add_tags(private_rt_id, f"{PROJECT_TAG}-{job_id}-Private-RT")
+        add_tags(private_rt_id,
+                 f"{PROJECT_TAG}-{job_id}-Private-RT")
 
         # Loop 2: Associate all private subnets with a single private routing table.
         for priv_subnet_id in private_subnet_ids:
@@ -181,8 +191,9 @@ def lambda_handler(event, context):
                 RouteTableId=private_rt_id,
                 SubnetId=priv_subnet_id
             )
-        logger.info(f"All {len(private_subnet_ids)} private subnets associated "
-                    f"on private RT {private_rt_id}.")
+        log_msg = (f"All {len(private_subnet_ids)} private subnets "
+                   f"associated on private RT {private_rt_id}.")
+        logger.info(log_msg)
 
         # --- 10. Wait for NAT Gateway and Add Single Private Route ---
         try:
@@ -201,7 +212,9 @@ def lambda_handler(event, context):
             DestinationCidrBlock='0.0.0.0/0',
             NatGatewayId=nat_gw_id
         )
-        logger.info(f"Route for NAT GW {nat_gw_id} added on private RT {private_rt_id}.")
+        log_msg = (f"Route for NAT GW {nat_gw_id} added on "
+                   f"private RT {private_rt_id}.")
+        logger.info(log_msg)
 
         # 11. Sucess! Update DynamoDB
         results = {
@@ -268,4 +281,3 @@ def update_status(job_id, status, results=None, error_message=None):
     except ClientError as e:
         logger.error(f"It was not possible to update the status in DynamoDB "
                      f"for the job {job_id}: {e}")
-
