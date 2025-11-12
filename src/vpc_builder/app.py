@@ -68,7 +68,7 @@ def lambda_handler(event, context):
 
         subnet_prefix_diff = (az_count - 1).bit_length()
         public_subnet_prefix = public_cidr_block.prefixlen + subnet_prefix_diff
-        private_subnet_prefix = private_cidr_block.prefixlen + subnet_prefix_diff # noqa: E501
+        private_subnet_prefix = private_cidr_block.prefixlen + subnet_prefix_diff  # noqa: E501
 
         if public_subnet_prefix > 28:
             # --- CORREÇÃO DE LINHA LONGA (ex-Linha 71) ---
