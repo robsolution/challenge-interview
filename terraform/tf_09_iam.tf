@@ -43,6 +43,11 @@ resource "aws_iam_policy" "api_handler_policy" {
         Action   = ["xray:PutTraceSegments", "xray:PutTelemetryRecords"]
         Effect   = "Allow"
         Resource = "*"
+      },
+      {
+        Action   = ["kms:Encrypt", "kms:Decrypt", "kms:GenerateDataKey"],
+        Effect   = "Allow",
+        Resource = aws_kms_key.shared_key.arn
       }
     ]
   })
@@ -114,7 +119,7 @@ resource "aws_iam_policy" "vpc_builder_policy" {
           "ec2:DescribeNatGateways"
         ]
         Effect   = "Allow"
-        Resource = "arn:aws:lambda:us-east-1:913974722485:function:VpcApiDemo-VpcBuilder" # Replace with appropriate ARN if needed
+        Resource = "*"
       },
       {
         Action = [
@@ -122,7 +127,16 @@ resource "aws_iam_policy" "vpc_builder_policy" {
           "xray:PutTelemetryRecords"
         ]
         Effect   = "Allow"
-        Resource = "arn:aws:lambda:us-east-1:913974722485:function:VpcApiDemo-VpcBuilder"
+        Resource = "*"
+      },
+      {
+        "Action": [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:GenerateDataKey"
+        ],
+        "Effect": "Allow",
+        "Resource": aws_kms_key.shared_key.arn
       }
     ]
   })
@@ -211,4 +225,7 @@ resource "aws_iam_policy" "api_gateway_logging_policy" {
 resource "aws_iam_role_policy_attachment" "api_gateway_logging_attach" {
   role       = aws_iam_role.api_gateway_logging_role.name
   policy_arn = aws_iam_policy.api_gateway_logging_policy.arn
+  depends_on = [
+    aws_iam_role.api_gateway_logging_role
+  ]
 }
