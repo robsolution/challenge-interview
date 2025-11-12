@@ -110,7 +110,7 @@ jobs:
       # It only runs on Pull Requests.
       - name: Cost Estimate (Infracost)
         if: github.event_name == 'pull_request'
-        uses: infracost/infracost-action@v2
+        uses: infracost/action/setup@v2
         with:
           path: ./terraform
           terraform_plan_flags: -out=tfplan
