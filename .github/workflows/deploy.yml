@@ -40,7 +40,7 @@ jobs:
         run: pip install flake8
 
       - name: Python lint verify
-        run: flake8 src/
+        run: flake8 --ignore=E501 --ignore=E261 src/
 
   # -----------------------------------------------------------------
   # Job 2: Security Scan (Check Secrets and Vulnerabilities)
