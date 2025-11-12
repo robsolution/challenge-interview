@@ -32,7 +32,6 @@ def lambda_handler(event, context):
     3. Associates all private subnets with this 1 table.
     """
     logger.info(f"Event received: {json.dumps(event)}")
-
     job_id = event['job_id']
     vpc_cidr = event['cidr']
 
@@ -72,8 +71,8 @@ def lambda_handler(event, context):
 
         if public_subnet_prefix > 28:
             msg = (f"Many AZs ({az_count}) to divide the block "
-                   f"{public_cidr_block}. The subnets would be smaller "
-                   f"than /28.")
+                   f"{public_cidr_block}. The subnets would be smaller than "
+                   f"/28.")
             raise ValueError(msg)
 
         public_subnets_iter = public_cidr_block.subnets(
@@ -105,7 +104,8 @@ def lambda_handler(event, context):
             DestinationCidrBlock='0.0.0.0/0',
             GatewayId=igw_id
         )
-        logger.info(f"PUBLIC route table {public_rt_id} created with route to IGW.")
+        logger.info(f"PUBLIC route table {public_rt_id} created with route "
+                    f"to IGW.")
 
         # 7. Loop 1: Create all Subnets
         public_subnet_ids = []
@@ -131,8 +131,8 @@ def lambda_handler(event, context):
                 SubnetId=pub_subnet_id,
                 MapPublicIpOnLaunch={'Value': True})
             public_subnet_ids.append(pub_subnet_id)
-            logger.info(f"Public Subnet {pub_subnet_id} ({public_subnet_cidr}) "
-                        f"on AZ {az_name} created.")
+            logger.info(f"Public Subnet {pub_subnet_id} "
+                        f"({public_subnet_cidr}) on AZ {az_name} created.")
 
             # Store the ID of the first public subnet for the NAT Gateway.
             if i == 0:
@@ -155,7 +155,7 @@ def lambda_handler(event, context):
 
         # --- 8. Create the SINGLE NAT Gateway ---
         if not first_public_subnet_id:
-            raise ValueError("No public subnet was created to host the NAT "
+            raise ValueError("No public subnet was created to host the NAT " +
                              "Gateway.")
         eip_response = ec2_client.allocate_address(Domain='vpc')
         eip_alloc_id = eip_response['AllocationId']
@@ -193,7 +193,7 @@ def lambda_handler(event, context):
             logger.info(f"NAT Gateway {nat_gw_id} is 'available'.")
         except ClientError as e:
             logger.error(f"Failed to wait for NAT Gateway {nat_gw_id}. {e}")
-            raise Exception(f"NAT Gateway {nat_gw_id} failed to become "
+            raise Exception(f"NAT Gateway {nat_gw_id} failed to become " +
                             f"'available'.")
 
         ec2_client.create_route(

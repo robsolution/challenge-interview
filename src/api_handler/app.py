@@ -13,27 +13,28 @@ logger.setLevel(logging.INFO)
 try:
     sfn_client = boto3.client('stepfunctions')
     dynamodb_client = boto3.client('dynamodb')
-    
+
     STEP_FUNCTION_ARN = os.environ['STEP_FUNCTION_ARN']
     DYNAMODB_TABLE = os.environ['DYNAMODB_TABLE']
 except KeyError as e:
     logger.error(f"Environment variable not defined: {e}")
     # This will cause the Lambda initialization to fail, which is the desired outcome
 
+
 def lambda_handler(event, context):
     """
     Main entry point. Routes based on the HTTP method.
     """
     logger.info(f"Event received: {json.dumps(event)}")
-    
+
     http_method = event.get('httpMethod')
-    
+
     try:
         if http_method == 'POST':
             return start_vpc_creation(event)
         elif http_method == 'GET':
             return get_vpc_status(event)
-        
+
         return create_response(405, {"error": "Method Not Allowed"})
 
     except Exception as e:
@@ -73,16 +74,16 @@ def start_vpc_creation(event):
                 'request_payload': {'S': json.dumps(body)}
             }
         )
-        
+
         # 2. Start a Step Function
         sfn_client.start_execution(
             stateMachineArn=STEP_FUNCTION_ARN,
             name=job_id,
             input=json.dumps(sfn_payload)
         )
-        
+
         logger.info(f"Job {job_id} iniciado com sucesso.")
-        
+
         # 202 Accepted is the correct HTTP response for asynchronous operations.
         return create_response(202, {'job_id': job_id, 'status': 'PENDING'})
 
@@ -90,12 +91,13 @@ def start_vpc_creation(event):
         logger.error(f"Boto3 error (start_vpc_creation): {e}")
         return create_response(500, {"error": f"Error starting job: {e}"})
 
+
 def get_vpc_status(event):
     """
     Handles GET /vpc/{job_id}. Query DynamoDB for job status.
     """
     job_id = event.get('pathParameters', {}).get('job_id')
-    
+
     if not job_id:
         return create_response(400, {"error": "Missing job_id path parameter"})
 
@@ -104,19 +106,20 @@ def get_vpc_status(event):
             TableName=DYNAMODB_TABLE,
             Key={'job_id': {'S': job_id}}
         )
-        
+
         if 'Item' not in response:
             logger.warn(f"Job not found: {job_id}")
             return create_response(404, {"error": "Job not found"})
 
         # Formats the DynamoDB response (which is complex) into a simple JSON
         item = {k: list(v.values())[0] for k, v in response['Item'].items()}
-        
+
         return create_response(200, item)
 
     except ClientError as e:
         logger.error(f"Boto3 error (get_vpc_status): {e}")
         return create_response(500, {"error": f"Error querying the job: {e}"})
+
 
 def create_response(status_code, body):
     """
