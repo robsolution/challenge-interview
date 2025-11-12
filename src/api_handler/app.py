@@ -89,9 +89,9 @@ def start_vpc_creation(event):
             input=json.dumps(sfn_payload)
         )
 
-        logger.info(f"Job {job_id} iniciado com sucesso.")
+        logger.info(f"Job {job_id} started successfully.")
 
-        # 202 Accepted is the correct HTTP response for asynchronous operations.
+        # 202 Accepted is the correct HTTP response for async operations.
         return create_response(202, {'job_id': job_id, 'status': 'PENDING'})
 
     except ClientError as e:
