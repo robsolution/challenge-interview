@@ -58,8 +58,8 @@ def lambda_handler(event, context):
             public_cidr_block = allocated_blocks[0]
             private_cidr_block = allocated_blocks[1]
         except Exception as e:
-            msg = (f"CIDR of VPC {vpc_cidr} is too small to be divided "
-                   f"in two. Error: {e}")
+            msg = (f"CIDR of VPC {vpc_cidr} is too small to be divided in "
+                   f"two. Error: {e}")
             raise ValueError(msg)
 
         logger.info(f"Public subnet block: {public_cidr_block}")
@@ -104,8 +104,8 @@ def lambda_handler(event, context):
             DestinationCidrBlock='0.0.0.0/0',
             GatewayId=igw_id
         )
-        logger.info(f"PUBLIC route table {public_rt_id} created with route to "
-                    f"IGW.")
+        logger.info(f"PUBLIC route table {public_rt_id} created with route " +
+                    "to IGW.")
 
         # 7. Loop 1: Create all Subnets
         public_subnet_ids = []
@@ -131,8 +131,8 @@ def lambda_handler(event, context):
                 SubnetId=pub_subnet_id,
                 MapPublicIpOnLaunch={'Value': True})
             public_subnet_ids.append(pub_subnet_id)
-            logger.info(f"Public Subnet {pub_subnet_id} ({public_subnet_cidr}) "
-                        f"on AZ {az_name} created.")
+            logger.info(f"Public Subnet {pub_subnet_id} "
+                        f"({public_subnet_cidr}) on AZ {az_name} created.")
 
             # Store the ID of the first public subnet for the NAT Gateway.
             if i == 0:
@@ -150,8 +150,8 @@ def lambda_handler(event, context):
                 priv_subnet_id,
                 f"{PROJECT_TAG}-{job_id}-Private-Subnet-{i+1}-{az_name}")
             private_subnet_ids.append(priv_subnet_id)
-            logger.info(f"Private Subnet {priv_subnet_id} ({private_subnet_cidr}) "
-                        f"on AZ {az_name} created.")
+            logger.info(f"Private Subnet {priv_subnet_id} "
+                        f"({private_subnet_cidr}) on AZ {az_name} created.")
 
         # --- 8. Create the SINGLE NAT Gateway ---
         if not first_public_subnet_id:
@@ -167,7 +167,7 @@ def lambda_handler(event, context):
         )
         nat_gw_id = nat_gw_response['NatGateway']['NatGatewayId']
         add_tags(nat_gw_id, f"{PROJECT_TAG}-{job_id}-NAT-GW-Single")
-        logger.info(f"SINGLE NAT Gateway {nat_gw_id} creating on subnet "
+        logger.info(f"SINGLE NAT Gateway {nat_gw_id} creating on subnet " +
                     f"{first_public_subnet_id}...")
 
         # --- 9. Create a PRIVATE Routing Table (Only one) ---
@@ -181,8 +181,8 @@ def lambda_handler(event, context):
                 RouteTableId=private_rt_id,
                 SubnetId=priv_subnet_id
             )
-        logger.info(f"All {len(private_subnet_ids)} private subnets "
-                    f"association on private RT {private_rt_id}.")
+        logger.info(f"All {len(private_subnet_ids)} private subnets " +
+                    f"associated on private RT {private_rt_id}.")
 
         # --- 10. Wait for NAT Gateway and Add Single Private Route ---
         try:
@@ -193,7 +193,7 @@ def lambda_handler(event, context):
             logger.info(f"NAT Gateway {nat_gw_id} is 'available'.")
         except ClientError as e:
             logger.error(f"Failed to wait for NAT Gateway {nat_gw_id}. {e}")
-            raise Exception(f"NAT Gateway {nat_gw_id} failed to become "
+            raise Exception(f"NAT Gateway {nat_gw_id} failed to become " +
                             "'available'.")
 
         ec2_client.create_route(

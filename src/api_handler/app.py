@@ -52,15 +52,16 @@ def start_vpc_creation(event):
         body = json.loads(event.get('body', '{}'))
     except json.JSONDecodeError:
         return create_response(
-            400,
-            {"error": "The request body is incorrectly formatted (invalid JSON)."}
+            400, {"error": "The request body is incorrectly formatted "
+                           "(invalid JSON)."}
         )
 
     # Input validation
     cidr = body.get('cidr')
 
     if not cidr:
-        return create_response(400, {"error": "Required field missing: 'cidr'"})
+        return create_response(400,
+                               {"error": "Required field missing: 'cidr'"})
 
     job_id = str(uuid.uuid4())
 
