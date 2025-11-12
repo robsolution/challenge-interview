@@ -1,0 +1,6 @@
+{
+  "job_id": "fb615a2b-d118-4056-b755-66e56bcbaec7",
+  "request_payload": "{\"cidr\": \"10.150.0.0/24\"}",
+  "results": "{\"vpc_id\": \"vpc-0ce5a243e823a6de3\", \"internet_gateway_id\": \"igw-0d1a0bfe133e97d80\", \"public_route_table_id\": \"rtb-0c5cafaa9ff479b4c\", \"public_subnet_ids\": [\"subnet-0324d506138c65ecc\", \"subnet-072ed1050b6f3be4e\", \"subnet-0e0b74fa787f41696\", \"subnet-04ef37d11b335768a\", \"subnet-0c90ba023fa28d7d1\", \"subnet-055ac47cb98f1a59a\"], \"private_subnet_ids\": [\"subnet-000767d4d946b59a5\", \"subnet-086797532674f79bc\", \"subnet-0fd75913de31e78c1\", \"subnet-0cd13be124fc65026\", \"subnet-010f90d896e2d98e8\", \"subnet-0ab7d0ed3e9e83ab4\"], \"private_route_table_id\": \"rtb-051f53d98105e8649\", \"nat_gateway_id\": \"nat-0feae439ec7af7d73\", \"availability_zones_used\": [\"us-east-1a\", \"us-east-1b\", \"us-east-1c\", \"us-east-1d\", \"us-east-1e\", \"us-east-1f\"]}",
+  "status": "COMPLETE"
+}

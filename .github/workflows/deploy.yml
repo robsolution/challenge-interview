@@ -1,0 +1,153 @@
+name: CI/CD of Infrastructure VPC API
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  # -----------------------------------------------------------------
+  # Job 1: Linting (Check Formatting and Style)
+  # -----------------------------------------------------------------
+  lint:
+    name: 🧹 Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform format verification
+        run: terraform fmt -check -recursive
+        working-directory: ./terraform
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Flake8
+        run: pip install flake8
+
+      - name: Python lint verify
+        run: flake8 src/
+
+  # -----------------------------------------------------------------
+  # Job 2: Security Scan (Check Secrets and Vulnerabilities)
+  # -----------------------------------------------------------------
+  security_scan:
+    name: 🛡️ Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: 1. Secret Scan (TruffleHog)
+        uses: trufflesecurity/trufflehog-actions@main
+        with:
+          path: ./
+          base: ${{ github.event.before }}
+          head: ${{ github.sha }}
+          extra_args: --only-verified
+
+      - name: 2. IaC Scan (tfsec)
+        uses: aquasecurity/tfsec-action@v1.0.0
+        with:
+          working_directory: ./terraform
+
+  # -----------------------------------------------------------------
+  # Job 3: Validate & Plan (Infrastructure Plan and Cost Estimate)
+  # -----------------------------------------------------------------
+  validate_and_plan:
+    name: 💸 Validate, Plan & Cost
+    runs-on: ubuntu-latest
+    needs: [lint, security_scan]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::AWS_ACCOUNT_ID:role/GitHubActionsRole
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./terraform
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ./terraform
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -out=tfplan
+        working-directory: ./terraform
+        continue-on-error: false
+
+      - name: Salvar Artefato do Plano
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: ./terraform/tfplan
+
+      # --- Cost Estimate (Infracost) ---
+      # It only runs on Pull Requests.
+      - name: Cost Estimate (Infracost)
+        if: github.event_name == 'pull_request'
+        uses: infracost/infracost-action@v2
+        with:
+          path: ./terraform
+          terraform_plan_flags: -out=tfplan
+          # An API Key is required to post comments on the PR
+          api_key: ${{ secrets.INFRACOST_API_KEY }} 
+          behavior: update
+
+  # -----------------------------------------------------------------
+  # Job 4: Deploy (Apply on Infraestructurwe
+  # -----------------------------------------------------------------
+  deploy:
+    name: 🚀 Deploy
+    runs-on: ubuntu-latest
+    needs: [validate_and_plan]
+    
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::AWS_ACCOUNT_ID:role/GitHubActionsRole
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Download Artifact of Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan
+          path: ./terraform
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./terraform
+        
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+        working-directory: ./terraform
