@@ -18,7 +18,8 @@ try:
     DYNAMODB_TABLE = os.environ['DYNAMODB_TABLE']
 except KeyError as e:
     logger.error(f"Environment variable not defined: {e}")
-    # This will cause the Lambda initialization to fail, which is the desired outcome
+    # This will cause the Lambda initialization to fail, which is the
+    # desired outcome
 
 
 def lambda_handler(event, context):
@@ -41,23 +42,28 @@ def lambda_handler(event, context):
         logger.error(f"Unexpected error: {e}")
         return create_response(500, {"error": "Internal Server Error"})
 
+
 def start_vpc_creation(event):
     """
-    Handles POST /vpc requests. Validates the input, saves it to DynamoDB, and starts the Step Function.
+    Handles POST /vpc requests. Validates input, saves to DynamoDB,
+    and starts the Step Function.
     """
     try:
         body = json.loads(event.get('body', '{}'))
     except json.JSONDecodeError:
-        return create_response(400, {"error": "The request body is incorrectly formatted (invalid JSON)."})
+        return create_response(
+            400,
+            {"error": "The request body is incorrectly formatted (invalid JSON)."}
+        )
 
     # Input validation
     cidr = body.get('cidr')
-    
+
     if not cidr:
         return create_response(400, {"error": "Required field missing: 'cidr'"})
-    
+
     job_id = str(uuid.uuid4())
-    
+
     # Payload for Step Function
     sfn_payload = {
         'job_id': job_id,
@@ -89,7 +95,7 @@ def start_vpc_creation(event):
 
     except ClientError as e:
         logger.error(f"Boto3 error (start_vpc_creation): {e}")
-        return create_response(500, {"error": f"Error starting job: {e}"})
+        return create_response(500, {"error": "Error starting job"})
 
 
 def get_vpc_status(event):

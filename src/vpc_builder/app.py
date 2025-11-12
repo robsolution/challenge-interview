@@ -25,7 +25,7 @@ def lambda_handler(event, context):
     Main entry point. Receives the payload from the Step Function.
     Creates VPC with public and private subnets (with ONE NAT Gateway)
     spread across all Availability Zones.
-    
+
     Cost Savings Logic:
     1. Creates 1 NAT Gateway in the first public subnet.
     2. Creates 1 Private Routing Table.
@@ -58,7 +58,7 @@ def lambda_handler(event, context):
             public_cidr_block = allocated_blocks[0]
             private_cidr_block = allocated_blocks[1]
         except Exception as e:
-            msg = (f"CIDR of VPC {vpc_cidr} it's too small to be divided "
+            msg = (f"CIDR of VPC {vpc_cidr} is too small to be divided "
                    f"in two. Error: {e}")
             raise ValueError(msg)
 
@@ -71,8 +71,8 @@ def lambda_handler(event, context):
 
         if public_subnet_prefix > 28:
             msg = (f"Many AZs ({az_count}) to divide the block "
-                   f"{public_cidr_block}. The subnets would be smaller than "
-                   f"/28.")
+                   f"{public_cidr_block}. The subnets would be smaller than /28."
+                   )
             raise ValueError(msg)
 
         public_subnets_iter = public_cidr_block.subnets(
@@ -104,8 +104,8 @@ def lambda_handler(event, context):
             DestinationCidrBlock='0.0.0.0/0',
             GatewayId=igw_id
         )
-        logger.info(f"PUBLIC route table {public_rt_id} created with route "
-                    f"to IGW.")
+        logger.info(f"PUBLIC route table {public_rt_id} created with route to "
+                    f"IGW.")
 
         # 7. Loop 1: Create all Subnets
         public_subnet_ids = []
@@ -131,8 +131,8 @@ def lambda_handler(event, context):
                 SubnetId=pub_subnet_id,
                 MapPublicIpOnLaunch={'Value': True})
             public_subnet_ids.append(pub_subnet_id)
-            logger.info(f"Public Subnet {pub_subnet_id} "
-                        f"({public_subnet_cidr}) on AZ {az_name} created.")
+            logger.info(f"Public Subnet {pub_subnet_id} ({public_subnet_cidr}) "
+                        f"on AZ {az_name} created.")
 
             # Store the ID of the first public subnet for the NAT Gateway.
             if i == 0:
@@ -150,8 +150,8 @@ def lambda_handler(event, context):
                 priv_subnet_id,
                 f"{PROJECT_TAG}-{job_id}-Private-Subnet-{i+1}-{az_name}")
             private_subnet_ids.append(priv_subnet_id)
-            logger.info(f"Private Subnet {priv_subnet_id} "
-                        f"({private_subnet_cidr}) on AZ {az_name} created.")
+            logger.info(f"Private Subnet {priv_subnet_id} ({private_subnet_cidr}) "
+                        f"on AZ {az_name} created.")
 
         # --- 8. Create the SINGLE NAT Gateway ---
         if not first_public_subnet_id:
@@ -193,8 +193,8 @@ def lambda_handler(event, context):
             logger.info(f"NAT Gateway {nat_gw_id} is 'available'.")
         except ClientError as e:
             logger.error(f"Failed to wait for NAT Gateway {nat_gw_id}. {e}")
-            raise Exception(f"NAT Gateway {nat_gw_id} failed to become " +
-                            f"'available'.")
+            raise Exception(f"NAT Gateway {nat_gw_id} failed to become "
+                            "'available'.")
 
         ec2_client.create_route(
             RouteTableId=private_rt_id,
@@ -220,7 +220,7 @@ def lambda_handler(event, context):
 
     except Exception as e:
         logger.error(f"VPC creation failed for the job {job_id}: {e}")
-        # 12. Failed! Update DynamoDB
+        # Failed! Update DynamoDB
         update_status(job_id, 'FAILED', error_message=str(e))
         # Propagate the error to cause the Step Function to fail.
         raise e
