@@ -25,7 +25,7 @@ resource "aws_iam_policy" "api_handler_policy" {
         # Logs permission
         Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
         Effect   = "Allow"
-        Resource = "arn:aws:logs:*:*:*"
+        Resource = aws_cloudwatch_log_group.api_handler_logs.arn
       },
       {
         # Permission to interact with the DynamoDB table.
@@ -38,6 +38,11 @@ resource "aws_iam_policy" "api_handler_policy" {
         Action   = "states:StartExecution"
         Effect   = "Allow"
         Resource = aws_sfn_state_machine.vpc_orchestrator.id
+      },
+      {
+        Action   = ["xray:PutTraceSegments", "xray:PutTelemetryRecords"]
+        Effect   = "Allow"
+        Resource = "*"
       }
     ]
   })
@@ -78,7 +83,7 @@ resource "aws_iam_policy" "vpc_builder_policy" {
         # Logs permission
         Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
         Effect   = "Allow"
-        Resource = "arn:aws:logs:*:*:*"
+        Resource = aws_cloudwatch_log_group.vpc_builder_logs.arn
       },
       {
         # DynamoDB table permission for update
@@ -107,6 +112,11 @@ resource "aws_iam_policy" "vpc_builder_policy" {
           "ec2:CreateNatGateway",
           "ec2:DescribeNatGateways"
         ]
+        Effect   = "Allow"
+        Resource = "*"
+      },
+      {
+        Action   = ["xray:PutTraceSegments", "xray:PutTelemetryRecords"]
         Effect   = "Allow"
         Resource = "*"
       }
@@ -159,4 +169,42 @@ resource "aws_iam_policy" "step_function_policy" {
 resource "aws_iam_role_policy_attachment" "step_function_attach" {
   role       = aws_iam_role.step_function_role.name
   policy_arn = aws_iam_policy.step_function_policy.arn
+}
+
+# 10. Role for API Gateway can write logs
+resource "aws_iam_role" "api_gateway_logging_role" {
+  name = "${var.project_name}-APIGW-Logging-Role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "apigateway.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+# 11. Role for API Gateway can write logs
+resource "aws_iam_policy" "api_gateway_logging_policy" {
+  name = "${var.project_name}-APIGW-Logging-Policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+        Effect   = "Allow"
+        Resource = "${aws_cloudwatch_log_group.api_gateway_logs.arn}:*"
+      },
+    ]
+  })
+}
+
+# 12. Attach the policy on role
+resource "aws_iam_role_policy_attachment" "api_gateway_logging_attach" {
+  role       = aws_iam_role.api_gateway_logging_role.name
+  policy_arn = aws_iam_policy.api_gateway_logging_policy.arn
 }
