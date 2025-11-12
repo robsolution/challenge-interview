@@ -86,9 +86,29 @@ resource "aws_api_gateway_deployment" "api_deployment" {
 
 # 10. Stage (ex: 'dev', 'nprod' or 'prod')
 resource "aws_api_gateway_stage" "api_stage" {
-  deployment_id = aws_api_gateway_deployment.api_deployment.id
-  rest_api_id   = aws_api_gateway_rest_api.vpc_api.id
-  stage_name    = var.environment
+  deployment_id        = aws_api_gateway_deployment.api_deployment.id
+  rest_api_id          = aws_api_gateway_rest_api.vpc_api.id
+  stage_name           = var.environment
+  xray_tracing_enabled = true
+
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
+    format = jsonencode({
+      requestId               = "$context.requestId"
+      sourceIp                = "$context.identity.sourceIp"
+      requestTime             = "$context.requestTime"
+      httpMethod              = "$context.httpMethod"
+      path                    = "$context.path"
+      status                  = "$context.status"
+      responseLength          = "$context.responseLength"
+      authorizerPrincipalId   = "$context.authorizer.principalId"
+    })
+  }
+
+  depends_on = [
+    aws_api_gateway_account.current
+  ]
+  
 }
 
 # 11. API Gateway permission to Lambda invoke 'api_handler'
@@ -100,4 +120,12 @@ resource "aws_lambda_permission" "api_gateway_permission" {
 
   # Allows any method at any stage of the API to invoke a Lambda.
   source_arn = "${aws_api_gateway_rest_api.vpc_api.execution_arn}/*/*"
+}
+
+# 12. Associate the log role with the account (required for APIGW v1)
+resource "aws_api_gateway_account" "current" {
+  cloudwatch_role_arn = aws_iam_role.api_gateway_logging_role.arn
+  depends_on = [
+    aws_iam_role_policy_attachment.api_gateway_logging_attach
+  ]
 }

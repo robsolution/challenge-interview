@@ -15,9 +15,18 @@ resource "aws_lambda_function" "api_handler" {
     }
   }
 
+  tracing_config {
+    mode = "Active"
+  }
+
   tags = {
     Project = var.project_name
   }
+
+  depends_on = [
+    aws_cloudwatch_log_group.api_handler_logs
+  ]
+
 }
 
 # 2. Lambda 'vpc_builder'
@@ -37,8 +46,17 @@ resource "aws_lambda_function" "vpc_builder" {
     }
   }
 
+  tracing_config {
+    mode = "Active"
+  }
+
   tags = {
     Project = var.project_name
   }
+
+  depends_on = [
+    aws_cloudwatch_log_group.vpc_builder_logs
+  ]
+  
 }
 
