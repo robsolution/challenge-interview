@@ -71,6 +71,7 @@ def lambda_handler(event, context):
         private_subnet_prefix = private_cidr_block.prefixlen + subnet_prefix_diff
 
         if public_subnet_prefix > 28:
+            # --- CORREÇÃO DE LINHA LONGA (ex-Linha 71) ---
             msg = (
                 f"Many AZs ({az_count}) to divide the block "
                 f"{public_cidr_block}. The subnets would be smaller "
@@ -191,6 +192,7 @@ def lambda_handler(event, context):
                 RouteTableId=private_rt_id,
                 SubnetId=priv_subnet_id
             )
+        # --- CORREÇÃO DE LINHA LONGA (ex-Linha 188) ---
         log_msg = (f"All {len(private_subnet_ids)} private subnets "
                    f"associated on private RT {private_rt_id}.")
         logger.info(log_msg)
@@ -279,5 +281,6 @@ def update_status(job_id, status, results=None, error_message=None):
             ExpressionAttributeValues=expression_attr_values
         )
     except ClientError as e:
-        logger.error(f"It was not possible to update the status in DynamoDB "
-                     f"for the job {job_id}: {e}")
+        log_msg = (f"It was not possible to update the status in DynamoDB "
+                   f"for the job {job_id}: {e}")
+        logger.error(log_msg)
