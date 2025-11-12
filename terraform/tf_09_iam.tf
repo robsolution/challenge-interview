@@ -91,7 +91,7 @@ resource "aws_iam_policy" "vpc_builder_policy" {
         Effect   = "Allow"
         Resource = aws_dynamodb_table.vpc_requests.arn
       },
-      # tfsec:ignore:aws-iam-no-policy-wildcards
+      # tfsec:ignore:aws-iam-no-policy-wildcards # Ações de criação EC2 (CreateVpc, etc) exigem Resource='*'
       {
         # EC2 permissions to create the VPC and its components.
         Action = [
