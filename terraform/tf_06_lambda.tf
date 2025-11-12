@@ -57,6 +57,6 @@ resource "aws_lambda_function" "vpc_builder" {
   depends_on = [
     aws_cloudwatch_log_group.vpc_builder_logs
   ]
-  
+
 }
 

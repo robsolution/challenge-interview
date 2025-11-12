@@ -94,21 +94,21 @@ resource "aws_api_gateway_stage" "api_stage" {
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
     format = jsonencode({
-      requestId               = "$context.requestId"
-      sourceIp                = "$context.identity.sourceIp"
-      requestTime             = "$context.requestTime"
-      httpMethod              = "$context.httpMethod"
-      path                    = "$context.path"
-      status                  = "$context.status"
-      responseLength          = "$context.responseLength"
-      authorizerPrincipalId   = "$context.authorizer.principalId"
+      requestId             = "$context.requestId"
+      sourceIp              = "$context.identity.sourceIp"
+      requestTime           = "$context.requestTime"
+      httpMethod            = "$context.httpMethod"
+      path                  = "$context.path"
+      status                = "$context.status"
+      responseLength        = "$context.responseLength"
+      authorizerPrincipalId = "$context.authorizer.principalId"
     })
   }
 
   depends_on = [
     aws_api_gateway_account.current
   ]
-  
+
 }
 
 # 11. API Gateway permission to Lambda invoke 'api_handler'

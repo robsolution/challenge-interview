@@ -1,9 +1,9 @@
 resource "aws_dynamodb_table" "vpc_requests" {
-  name               = "${var.project_name}-VpcRequests"
-  billing_mode       = "PAY_PER_REQUEST"
-  hash_key           = "job_id"
+  name         = "${var.project_name}-VpcRequests"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "job_id"
   server_side_encryption {
-    enabled = true
+    enabled     = true
     kms_key_arn = aws_kms_key.shared_key.arn
   }
 
@@ -23,5 +23,5 @@ resource "aws_dynamodb_table" "vpc_requests" {
   depends_on = [
     aws_kms_key.shared_key
   ]
-  
+
 }

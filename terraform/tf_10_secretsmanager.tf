@@ -7,7 +7,7 @@ resource "aws_secretsmanager_secret" "cognito_creds" {
   depends_on = [
     aws_kms_key.shared_key
   ]
-  
+
 }
 
 resource "aws_secretsmanager_secret_version" "cognito_creds_version" {

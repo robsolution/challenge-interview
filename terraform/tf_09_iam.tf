@@ -114,10 +114,10 @@ resource "aws_iam_policy" "vpc_builder_policy" {
           "ec2:DescribeNatGateways"
         ]
         Effect   = "Allow"
-        Resource = "arn:aws:lambda:us-east-1:913974722485:function:VpcApiDemo-VpcBuilder"  # Replace with appropriate ARN if needed
+        Resource = "arn:aws:lambda:us-east-1:913974722485:function:VpcApiDemo-VpcBuilder" # Replace with appropriate ARN if needed
       },
       {
-        Action   = [
+        Action = [
           "xray:PutTraceSegments",
           "xray:PutTelemetryRecords"
         ]
