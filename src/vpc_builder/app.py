@@ -268,4 +268,4 @@ def update_status(job_id, status, results=None, error_message=None):
     except ClientError as e:
         logger.error(f"It was not possible to update the status in DynamoDB "
                      f"for the job {job_id}: {e}")
-        
+
